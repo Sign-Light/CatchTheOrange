@@ -50,7 +50,7 @@
 </head>
 <body>
   <h1>Catch the Orange 🍊</h1>
-  <p id="instructions">👉 Slide on the white screen to move the basket</p>
+  <p id="instructions">👉 Slide on the screen to move the basket</p>
   <button id="playButton">▶ Play</button>
   <p id="score">Score: 0</p>
   <p id="highScore">High Score: 0</p>
@@ -116,11 +116,16 @@
       if (basket.x + basket.width > canvas.width) basket.x = canvas.width - basket.width;
     }
 
-    canvas.addEventListener("mousemove", (e) => {
-      if (running) moveBasket(e.offsetX);
+    // ✅ Listen on the whole window, not just canvas
+    window.addEventListener("mousemove", (e) => {
+      if (running) {
+        let rect = canvas.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        moveBasket(x);
+      }
     });
 
-    canvas.addEventListener("touchmove", (e) => {
+    window.addEventListener("touchmove", (e) => {
       if (running) {
         let touch = e.touches[0];
         let rect = canvas.getBoundingClientRect();
