@@ -46,6 +46,18 @@
     #playButton:hover {
       background: darkorange;
     }
+    #credit {
+      margin-top: 10px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    #credit a {
+      color: darkblue;
+      text-decoration: none;
+    }
+    #credit a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -56,6 +68,9 @@
   <p id="highScore">High Score: 0</p>
   <p id="gameOver">Game Over! Press Play to try again.</p>
   <canvas id="gameCanvas" width="400" height="600"></canvas>
+
+  <!-- ✅ Added credit note -->
+  <p id="credit">By: <a href="https://orange.sign.global/app?invite-code=7CWM19M1YH" target="_blank">https://orange.sign.global/app?invite-code=7CWM19M1YH</a></p>
 
   <script>
     const canvas = document.getElementById("gameCanvas");
