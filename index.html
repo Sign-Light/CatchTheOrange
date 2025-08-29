@@ -16,7 +16,12 @@
       display: block;
       margin: 20px auto;
       border: 3px solid #333;
-      touch-action: none; /* Prevents page scrolling while swiping */
+      touch-action: none;
+    }
+    #instructions {
+      font-size: 16px;
+      font-weight: bold;
+      margin: 5px;
     }
     #score {
       font-size: 20px;
@@ -45,6 +50,7 @@
 </head>
 <body>
   <h1>Catch the Orange 🍊</h1>
+  <p id="instructions">👉 Slide on the white screen to move the basket</p>
   <button id="playButton">▶ Play</button>
   <p id="score">Score: 0</p>
   <p id="gameOver">Game Over! Press Play to try again.</p>
@@ -54,14 +60,18 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    let basket, orange, score, gameOver, running;
+    let basket, fruits, score, gameOver, running, animation;
 
     function initGame() {
       basket = { x: 175, y: 550, width: 70, height: 20 };
-      orange = { x: Math.random() * 370, y: 0, size: 40, speed: 3 };
+      fruits = [];
       score = 0;
       gameOver = false;
       running = true;
+      animation = null;
+
+      // Spawn first fruits
+      spawnFruit();
       document.getElementById("score").textContent = "Score: 0";
       document.getElementById("score").style.display = "block";
       document.getElementById("gameOver").style.display = "none";
@@ -72,7 +82,20 @@
       update();
     });
 
-    // Touch & mouse drag control
+    // Spawn fruit randomly (orange or apple)
+    function spawnFruit() {
+      let type = Math.random() < 0.7 ? "orange" : "apple"; // 70% chance orange
+      let fruit = {
+        type,
+        x: Math.random() * 370,
+        y: 0,
+        size: 40,
+        speed: 2 + Math.random() * 2
+      };
+      fruits.push(fruit);
+    }
+
+    // Touch + mouse drag
     function moveBasket(x) {
       basket.x = x - basket.width / 2;
       if (basket.x < 0) basket.x = 0;
@@ -97,27 +120,57 @@
       ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
     }
 
-    function drawOrange() {
-      // Orange body
-      ctx.beginPath();
-      ctx.arc(orange.x, orange.y, orange.size / 2, 0, Math.PI * 2);
-      ctx.fillStyle = "orange";
-      ctx.fill();
-      ctx.closePath();
+    function drawFruit(f, scale = 1, alpha = 1) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(f.x, f.y);
+      ctx.scale(scale, scale);
 
-      // Leaf
-      ctx.beginPath();
-      ctx.ellipse(orange.x + 10, orange.y - 15, 10, 5, Math.PI / 4, 0, Math.PI * 2);
-      ctx.fillStyle = "green";
-      ctx.fill();
-      ctx.closePath();
+      if (f.type === "orange") {
+        // Orange body
+        ctx.beginPath();
+        ctx.arc(0, 0, f.size / 2, 0, Math.PI * 2);
+        ctx.fillStyle = "orange";
+        ctx.fill();
+        ctx.closePath();
 
-      // Stem
-      ctx.beginPath();
-      ctx.rect(orange.x - 2, orange.y - 20, 4, 8);
-      ctx.fillStyle = "brown";
-      ctx.fill();
-      ctx.closePath();
+        // Leaf
+        ctx.beginPath();
+        ctx.ellipse(10, -15, 10, 5, Math.PI / 4, 0, Math.PI * 2);
+        ctx.fillStyle = "green";
+        ctx.fill();
+        ctx.closePath();
+
+        // Stem
+        ctx.beginPath();
+        ctx.rect(-2, -20, 4, 8);
+        ctx.fillStyle = "brown";
+        ctx.fill();
+        ctx.closePath();
+      } else if (f.type === "apple") {
+        // Apple body
+        ctx.beginPath();
+        ctx.arc(0, 0, f.size / 2, 0, Math.PI * 2);
+        ctx.fillStyle = "red";
+        ctx.fill();
+        ctx.closePath();
+
+        // Leaf
+        ctx.beginPath();
+        ctx.ellipse(10, -15, 10, 5, Math.PI / 4, 0, Math.PI * 2);
+        ctx.fillStyle = "green";
+        ctx.fill();
+        ctx.closePath();
+
+        // Stem
+        ctx.beginPath();
+        ctx.rect(-2, -20, 4, 8);
+        ctx.fillStyle = "brown";
+        ctx.fill();
+        ctx.closePath();
+      }
+
+      ctx.restore();
     }
 
     function update() {
@@ -126,29 +179,62 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       drawBasket();
-      drawOrange();
 
-      // Move orange down
-      orange.y += orange.speed;
+      // Draw fruits
+      for (let i = 0; i < fruits.length; i++) {
+        let f = fruits[i];
+        if (animation && animation.fruit === f) {
+          animation.frame++;
+          let scale = 1 + animation.frame * 0.1;
+          let alpha = 1 - animation.frame * 0.1;
+          drawFruit(f, scale, alpha);
+          if (animation.frame > 10) {
+            animation = null;
+            fruits.splice(i, 1);
+            i--;
+            spawnFruit();
+          }
+        } else {
+          drawFruit(f);
+          f.y += f.speed;
 
-      // Missed -> Game Over
-      if (orange.y > canvas.height) {
-        document.getElementById("gameOver").style.display = "block";
-        running = false;
-        return;
+          // Missed an orange (just respawn it)
+          if (f.type === "orange" && f.y > canvas.height) {
+            fruits.splice(i, 1);
+            i--;
+            spawnFruit();
+            continue;
+          }
+
+          // If apple falls down safely, respawn it too
+          if (f.type === "apple" && f.y > canvas.height) {
+            fruits.splice(i, 1);
+            i--;
+            spawnFruit();
+            continue;
+          }
+
+          // Collision detection
+          if (
+            f.y + f.size / 2 >= basket.y &&
+            f.x >= basket.x &&
+            f.x <= basket.x + basket.width
+          ) {
+            if (f.type === "orange") {
+              score++;
+              document.getElementById("score").textContent = "Score: " + score;
+              animation = { fruit: f, frame: 0 };
+            } else if (f.type === "apple") {
+              document.getElementById("gameOver").style.display = "block";
+              running = false;
+              return;
+            }
+          }
+        }
       }
 
-      // Collision detection
-      if (
-        orange.y + orange.size / 2 >= basket.y &&
-        orange.x >= basket.x &&
-        orange.x <= basket.x + basket.width
-      ) {
-        score++;
-        document.getElementById("score").textContent = "Score: " + score;
-        orange.y = 0;
-        orange.x = Math.random() * (canvas.width - orange.size);
-      }
+      // Randomly add new fruits over time
+      if (Math.random() < 0.01) spawnFruit();
 
       requestAnimationFrame(update);
     }
