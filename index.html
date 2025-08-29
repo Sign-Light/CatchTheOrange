@@ -16,6 +16,7 @@
       display: block;
       margin: 20px auto;
       border: 3px solid #333;
+      touch-action: none; /* Prevents page scrolling while swiping */
     }
     #score {
       font-size: 20px;
@@ -40,26 +41,6 @@
     #playButton:hover {
       background: darkorange;
     }
-    .controls {
-      display: flex;
-      justify-content: center;
-      margin-top: 10px;
-    }
-    .control-btn {
-      width: 100px;
-      height: 60px;
-      margin: 5px;
-      font-size: 20px;
-      font-weight: bold;
-      border: none;
-      border-radius: 5px;
-      background: #333;
-      color: white;
-      cursor: pointer;
-    }
-    .control-btn:active {
-      background: #555;
-    }
   </style>
 </head>
 <body>
@@ -69,12 +50,6 @@
   <p id="gameOver">Game Over! Press Play to try again.</p>
   <canvas id="gameCanvas" width="400" height="600"></canvas>
 
-  <!-- Mobile controls -->
-  <div class="controls">
-    <button class="control-btn" id="leftBtn">⬅ Left</button>
-    <button class="control-btn" id="rightBtn">Right ➡</button>
-  </div>
-
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -82,7 +57,7 @@
     let basket, orange, score, gameOver, running;
 
     function initGame() {
-      basket = { x: 175, y: 550, width: 70, height: 20, speed: 15 };
+      basket = { x: 175, y: 550, width: 70, height: 20 };
       orange = { x: Math.random() * 370, y: 0, size: 40, speed: 3 };
       score = 0;
       gameOver = false;
@@ -97,19 +72,24 @@
       update();
     });
 
-    // Keyboard controls (desktop)
-    document.addEventListener("keydown", (e) => {
-      if (!running) return;
-      if (e.key === "ArrowLeft" && basket.x > 0) basket.x -= basket.speed;
-      if (e.key === "ArrowRight" && basket.x + basket.width < canvas.width) basket.x += basket.speed;
+    // Touch & mouse drag control
+    function moveBasket(x) {
+      basket.x = x - basket.width / 2;
+      if (basket.x < 0) basket.x = 0;
+      if (basket.x + basket.width > canvas.width) basket.x = canvas.width - basket.width;
+    }
+
+    canvas.addEventListener("mousemove", (e) => {
+      if (running) moveBasket(e.offsetX);
     });
 
-    // Touch controls (mobile)
-    document.getElementById("leftBtn").addEventListener("touchstart", () => {
-      if (running && basket.x > 0) basket.x -= basket.speed;
-    });
-    document.getElementById("rightBtn").addEventListener("touchstart", () => {
-      if (running && basket.x + basket.width < canvas.width) basket.x += basket.speed;
+    canvas.addEventListener("touchmove", (e) => {
+      if (running) {
+        let touch = e.touches[0];
+        let rect = canvas.getBoundingClientRect();
+        let x = touch.clientX - rect.left;
+        moveBasket(x);
+      }
     });
 
     function drawBasket() {
