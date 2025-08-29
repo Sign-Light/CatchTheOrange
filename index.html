@@ -76,7 +76,7 @@
       animation = null;
       spawnCounter = 0;
 
-      spawnFruit();
+      spawnFruit(true); // start with an orange
       document.getElementById("score").textContent = "Score: 0";
       document.getElementById("score").style.display = "block";
       document.getElementById("highScore").style.display = "block";
@@ -88,15 +88,24 @@
       update();
     });
 
-    function spawnFruit() {
+    function spawnFruit(forceOrange = false) {
       const types = ["orange", "apple", "banana", "grapes", "pear"];
-      let type = types[Math.floor(Math.random() * types.length)];
+
+      // ✅ Guarantee at least 1 orange if none exists
+      let hasOrange = fruits.some(f => f.type === "orange");
+      let type;
+      if (forceOrange || !hasOrange) {
+        type = "orange";
+      } else {
+        type = types[Math.floor(Math.random() * types.length)];
+      }
+
       let fruit = {
         type,
         x: Math.random() * 370,
         y: 0,
         size: 40,
-        speed: 2 + Math.random() * 2 + score * 0.05 // ✅ difficulty increases with score
+        speed: 2 + Math.random() * 2 + score * 0.05
       };
       fruits.push(fruit);
     }
@@ -231,7 +240,7 @@
       // ✅ spawn fruits at controlled rate
       spawnCounter++;
       if (spawnCounter > 60 && fruits.length < 3) { 
-        if (Math.random() < 0.5) spawnFruit(); 
+        spawnFruit(); 
         spawnCounter = 0;
       }
 
