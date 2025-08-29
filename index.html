@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Catch the Orange 🍊</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #87CEEB;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    #gameCanvas {
+      background: #f0f0f0;
+      display: block;
+      margin: 20px auto;
+      border: 3px solid #333;
+    }
+    #score {
+      font-size: 20px;
+      font-weight: bold;
+      display: none;
+    }
+    #gameOver {
+      font-size: 28px;
+      font-weight: bold;
+      color: red;
+      display: none;
+    }
+    #playButton {
+      font-size: 20px;
+      padding: 10px 20px;
+      background: orange;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    #playButton:hover {
+      background: darkorange;
+    }
+    .controls {
+      display: flex;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    .control-btn {
+      width: 100px;
+      height: 60px;
+      margin: 5px;
+      font-size: 20px;
+      font-weight: bold;
+      border: none;
+      border-radius: 5px;
+      background: #333;
+      color: white;
+      cursor: pointer;
+    }
+    .control-btn:active {
+      background: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>Catch the Orange 🍊</h1>
+  <button id="playButton">▶ Play</button>
+  <p id="score">Score: 0</p>
+  <p id="gameOver">Game Over! Press Play to try again.</p>
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+
+  <!-- Mobile controls -->
+  <div class="controls">
+    <button class="control-btn" id="leftBtn">⬅ Left</button>
+    <button class="control-btn" id="rightBtn">Right ➡</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let basket, orange, score, gameOver, running;
+
+    function initGame() {
+      basket = { x: 175, y: 550, width: 70, height: 20, speed: 15 };
+      orange = { x: Math.random() * 370, y: 0, size: 40, speed: 3 };
+      score = 0;
+      gameOver = false;
+      running = true;
+      document.getElementById("score").textContent = "Score: 0";
+      document.getElementById("score").style.display = "block";
+      document.getElementById("gameOver").style.display = "none";
+    }
+
+    document.getElementById("playButton").addEventListener("click", () => {
+      initGame();
+      update();
+    });
+
+    // Keyboard controls (desktop)
+    document.addEventListener("keydown", (e) => {
+      if (!running) return;
+      if (e.key === "ArrowLeft" && basket.x > 0) basket.x -= basket.speed;
+      if (e.key === "ArrowRight" && basket.x + basket.width < canvas.width) basket.x += basket.speed;
+    });
+
+    // Touch controls (mobile)
+    document.getElementById("leftBtn").addEventListener("touchstart", () => {
+      if (running && basket.x > 0) basket.x -= basket.speed;
+    });
+    document.getElementById("rightBtn").addEventListener("touchstart", () => {
+      if (running && basket.x + basket.width < canvas.width) basket.x += basket.speed;
+    });
+
+    function drawBasket() {
+      ctx.fillStyle = "brown";
+      ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
+    }
+
+    function drawOrange() {
+      // Orange body
+      ctx.beginPath();
+      ctx.arc(orange.x, orange.y, orange.size / 2, 0, Math.PI * 2);
+      ctx.fillStyle = "orange";
+      ctx.fill();
+      ctx.closePath();
+
+      // Leaf
+      ctx.beginPath();
+      ctx.ellipse(orange.x + 10, orange.y - 15, 10, 5, Math.PI / 4, 0, Math.PI * 2);
+      ctx.fillStyle = "green";
+      ctx.fill();
+      ctx.closePath();
+
+      // Stem
+      ctx.beginPath();
+      ctx.rect(orange.x - 2, orange.y - 20, 4, 8);
+      ctx.fillStyle = "brown";
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    function update() {
+      if (!running) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawBasket();
+      drawOrange();
+
+      // Move orange down
+      orange.y += orange.speed;
+
+      // Missed -> Game Over
+      if (orange.y > canvas.height) {
+        document.getElementById("gameOver").style.display = "block";
+        running = false;
+        return;
+      }
+
+      // Collision detection
+      if (
+        orange.y + orange.size / 2 >= basket.y &&
+        orange.x >= basket.x &&
+        orange.x <= basket.x + basket.width
+      ) {
+        score++;
+        document.getElementById("score").textContent = "Score: " + score;
+        orange.y = 0;
+        orange.x = Math.random() * (canvas.width - orange.size);
+      }
+
+      requestAnimationFrame(update);
+    }
+  </script>
+</body>
+</html>
